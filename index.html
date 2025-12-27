@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Word Sprint — Intent-Based Writing Tracker</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #0b0f17; color: #e8eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 22px; }
+    .grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 16px; }
+    @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #121a2a; border: 1px solid #203053; border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .sub { margin: 0 0 18px; color: #b8c6ea; line-height: 1.35; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    label { font-size: 13px; color: #b8c6ea; }
+    input, select, button {
+      background: #0e1524; color: #e8eefc;
+      border: 1px solid #2a3e6e; border-radius: 12px;
+      padding: 10px 12px; font-size: 14px;
+    }
+    input[type="number"] { width: 140px; }
+    button { cursor: pointer; border-color: #3b5cc2; }
+    button:hover { filter: brightness(1.08); }
+    .muted { color: #b8c6ea; font-size: 13px; }
+    .big { font-size: 34px; font-weight: 700; margin: 0; }
+    .pill { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid #2a3e6e; background: rgba(14,21,36,.6); }
+    .ok { color: #a8ffcb; }
+    .no { color: #ffb3b3; }
+    .bar { height: 12px; background: #0e1524; border: 1px solid #2a3e6e; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; width: 0%; background: #7aa7ff; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #203053; font-size: 14px; }
+    th { color: #b8c6ea; font-weight: 600; }
+    .right { text-align: right; }
+    .tiny { font-size: 12px; color: #b8c6ea; }
+    .danger { border-color: #aa3b3b; }
+    .footer { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .note { margin-top: 10px; line-height: 1.35; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; padding: 2px 6px; border: 1px solid #2a3e6e; border-radius: 8px; background: #0e1524; }
+    .divider { height: 1px; background: #203053; margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" style="margin-bottom:16px;">
+      <h1>Word Sprint</h1>
+      <p class="sub">
+        A gentle writing tracker that protects your streak by honoring different kinds of writing work.
+        <span class="tiny">(Data stays on this device.)</span>
+      </p>
+
+      <div class="row">
+        <div>
+          <label for="dailyGoal">Daily draft goal (words)</label><br />
+          <input id="dailyGoal" type="number" min="0" step="50" />
+          <span class="muted">Used on <b>Draft</b> days.</span>
+        </div>
+
+        <div>
+          <label for="intent">Today’s intent</label><br />
+          <select id="intent">
+            <option value="draft">✍️ Draft (hit your word goal)</option>
+            <option value="revise">✏️ Revise (any logged work counts)</option>
+            <option value="plan">🧠 Plan (minutes count)</option>
+            <option value="research">🔍 Research (session counts)</option>
+          </select>
+        </div>
+
+        <div id="inputDraft" style="display:none;">
+          <label for="draftWords">Words written today</label><br />
+          <input id="draftWords" type="number" step="10" placeholder="e.g., 620" />
+        </div>
+
+        <div id="inputRevise" style="display:none;">
+          <label for="reviseWords">Net words changed</label><br />
+          <input id="reviseWords" type="number" step="10" placeholder="e.g., -350" />
+          <div class="tiny">Negative is fine. Cutting words still counts.</div>
+        </div>
+
+        <div id="inputPlan" style="display:none;">
+          <label for="planMinutes">Minutes planned</label><br />
+          <input id="planMinutes" type="number" min="0" step="5" placeholder="e.g., 20" />
+        </div>
+
+        <div id="inputResearch" style="display:none;">
+          <label>&nbsp;</label><br />
+          <label class="pill"><input id="researchDone" type="checkbox" /> Session completed</label>
+        </div>
+
+        <div>
+          <label>&nbsp;</label><br />
+          <button id="saveBtn">Save today</button>
+        </div>
+      </div>
+
+      <div class="note tiny" id="criteriaNote"></div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div class="muted">Today</div>
+              <p class="big" id="todayStatus">—</p>
+              <div class="muted" id="todayDetail"></div>
+            </div>
+            <div style="min-width:220px;">
+              <div class="muted">Draft progress (if Draft day)</div>
+              <div class="bar" aria-label="progress bar"><div class="fill" id="progressFill"></div></div>
+              <div class="tiny" id="progressText" style="margin-top:6px;">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="muted">Current streak</div>
+          <p class="big" id="streak">0</p>
+          <div class="muted">Best streak</div>
+          <p class="big" id="bestStreak" style="font-size:26px;">0</p>
+          <div class="tiny">A streak day = a “Win” day based on your intent.</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button id="undoTodayBtn" class="danger">Clear today</button>
+        <button id="resetAllBtn" class="danger">Reset all data</button>
+        <span class="tiny">Tip: keep it tiny. This app is meant to reduce guilt, not add it.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2 style="margin:0;font-size:18px;">Last 7 days</h2>
+          <div class="tiny">Wins protect your momentum across drafting, revising, planning, and research.</div>
+        </div>
+        <div class="pill">
+          <span class="muted">7-day wins:</span> <b id="wins7">0</b>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Intent</th>
+              <th>Logged</th>
+              <th class="right">Win?</th>
+            </tr>
+          </thead>
+          <tbody id="weekRows"></tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="justify-content:space-between;">
+        <div class="pill"><span class="muted">7-day drafted words:</span> <b id="draft7">0</b></div>
+        <div class="pill"><span class="muted">7-day revise net:</span> <b id="revise7">0</b></div>
+        <div class="pill"><span class="muted">7-day plan minutes:</span> <b id="plan7">0</b></div>
+        <div class="pill"><span class="muted">7-day research sessions:</span> <b id="research7">0</b></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "wordsprint_v1";
+
+  const $ = (id) => document.getElementById(id);
+
+  const ui = {
+    dailyGoal: $("dailyGoal"),
+    intent: $("intent"),
+    draftWords: $("draftWords"),
+    reviseWords: $("reviseWords"),
+    planMinutes: $("planMinutes"),
+    researchDone: $("researchDone"),
+    saveBtn: $("saveBtn"),
+    undoTodayBtn: $("undoTodayBtn"),
+    resetAllBtn: $("resetAllBtn"),
+    inputDraft: $("inputDraft"),
+    inputRevise: $("inputRevise"),
+    inputPlan: $("inputPlan"),
+    inputResearch: $("inputResearch"),
+    criteriaNote: $("criteriaNote"),
+
+    todayStatus: $("todayStatus"),
+    todayDetail: $("todayDetail"),
+    streak: $("streak"),
+    bestStreak: $("bestStreak"),
+
+    progressFill: $("progressFill"),
+    progressText: $("progressText"),
+
+    weekRows: $("weekRows"),
+    wins7: $("wins7"),
+    draft7: $("draft7"),
+    revise7: $("revise7"),
+    plan7: $("plan7"),
+    research7: $("research7")
+  };
+
+  const todayKey = () => new Date().toISOString().slice(0,10); // YYYY-MM-DD
+
+  const intentLabel = (intent) => ({
+    draft: "✍️ Draft",
+    revise: "✏️ Revise",
+    plan: "🧠 Plan",
+    research: "🔍 Research"
+  }[intent] || intent);
+
+  const defaultState = () => ({
+    dailyGoal: 1000,
+    // entries keyed by YYYY-MM-DD
+    entries: {},
+    bestStreak: 0
+  });
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      // basic shape validation
+      if (!parsed || typeof parsed !== "object") return defaultState();
+      if (!parsed.entries || typeof parsed.entries !== "object") parsed.entries = {};
+      if (typeof parsed.dailyGoal !== "number") parsed.dailyGoal = 1000;
+      if (typeof parsed.bestStreak !== "number") parsed.bestStreak = 0;
+      return parsed;
+    } catch {
+      return defaultState();
+    }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function computeWin(entry, dailyGoal) {
+    if (!entry) return false;
+    switch (entry.intent) {
+      case "draft":
+        return Number(entry.value || 0) >= Number(dailyGoal || 0);
+      case "revise":
+        // Any saved revise day counts as a win (even 0), because showing up matters.
+        return entry.saved === true;
+      case "plan":
+        // Any minutes > 0 counts
+        return Number(entry.value || 0) > 0;
+      case "research":
+        return entry.value === true;
+      default:
+        return false;
+    }
+  }
+
+  function computeStreak(state) {
+    // streak = consecutive win days ending today (if today is a win, include it)
+    let streak = 0;
+    let d = new Date();
+    for (;;) {
+      const key = d.toISOString().slice(0,10);
+      const entry = state.entries[key];
+      const isWin = computeWin(entry, state.dailyGoal);
+      if (!isWin) break;
+      streak += 1;
+      // go back one day
+      d.setDate(d.getDate() - 1);
+      if (streak > 3650) break; // sanity
+    }
+    return streak;
+  }
+
+  function lastNDaysKeys(n) {
+    const keys = [];
+    const d = new Date();
+    for (let i=0; i<n; i++) {
+      keys.push(d.toISOString().slice(0,10));
+      d.setDate(d.getDate() - 1);
+    }
+    return keys;
+  }
+
+  function showInputsForIntent(intent) {
+    ui.inputDraft.style.display = (intent === "draft") ? "" : "none";
+    ui.inputRevise.style.display = (intent === "revise") ? "" : "none";
+    ui.inputPlan.style.display = (intent === "plan") ? "" : "none";
+    ui.inputResearch.style.display = (intent === "research") ? "" : "none";
+
+    const goal = Number(ui.dailyGoal.value || 0);
+    const notes = {
+      draft: `Draft day win = words ≥ ${goal}.`,
+      revise: "Revise day win = you showed up (saving counts, even if you cut words).",
+      plan: "Plan day win = minutes > 0.",
+      research: "Research day win = session completed."
+    };
+    ui.criteriaNote.textContent = notes[intent] || "";
+  }
+
+  function render(state) {
+    // goal
+    ui.dailyGoal.value = state.dailyGoal;
+
+    // today
+    const tKey = todayKey();
+    const entry = state.entries[tKey] || null;
+    const isWin = computeWin(entry, state.dailyGoal);
+
+    ui.todayStatus.textContent = entry ? (isWin ? "WIN ✅" : "Logged") : "Not logged";
+    ui.todayStatus.className = "big " + (entry ? (isWin ? "ok" : "") : "");
+    ui.todayDetail.textContent = entry
+      ? `${intentLabel(entry.intent)} — ${formatEntryValue(entry)}`
+      : "Choose an intent and save your work for today.";
+
+    // progress bar only meaningful on draft days
+    let pct = 0;
+    if (entry && entry.intent === "draft") {
+      const words = Number(entry.value || 0);
+      const goal = Number(state.dailyGoal || 0);
+      pct = goal > 0 ? Math.min(100, Math.round((words / goal) * 100)) : 0;
+      ui.progressText.textContent = `${words} / ${goal} (${pct}%)`;
+    } else {
+      ui.progressText.textContent = "—";
+    }
+    ui.progressFill.style.width = pct + "%";
+
+    // streaks
+    const streak = computeStreak(state);
+    ui.streak.textContent = String(streak);
+
+    // best streak update
+    if (streak > state.bestStreak) {
+      state.bestStreak = streak;
+      saveState(state);
+    }
+    ui.bestStreak.textContent = String(state.bestStreak);
+
+    // week view
+    const keys = lastNDaysKeys(7);
+    ui.weekRows.innerHTML = "";
+    let wins = 0;
+    let draftSum = 0;
+    let reviseSum = 0;
+    let planSum = 0;
+    let researchSum = 0;
+
+    for (const k of keys) {
+      const e = state.entries[k];
+      const win = computeWin(e, state.dailyGoal);
+      if (win) wins++;
+
+      let loggedText = "—";
+      if (e) {
+        loggedText = formatEntryValue(e);
+        if (e.intent === "draft") draftSum += Number(e.value || 0);
+        if (e.intent === "revise") reviseSum += Number(e.value || 0);
+        if (e.intent === "plan") planSum += Number(e.value || 0);
+        if (e.intent === "research" && e.value === true) researchSum += 1;
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${k}</td>
+        <td>${e ? intentLabel(e.intent) : "—"}</td>
+        <td>${loggedText}</td>
+        <td class="right">${win ? '<span class="ok">✅</span>' : '<span class="tiny">—</span>'}</td>
+      `;
+      ui.weekRows.appendChild(tr);
+    }
+
+    ui.wins7.textContent = String(wins);
+    ui.draft7.textContent = String(draftSum);
+    ui.revise7.textContent = String(reviseSum);
+    ui.plan7.textContent = String(planSum);
+    ui.research7.textContent = String(researchSum);
+
+    // reflect today into inputs
+    if (entry) {
+      ui.intent.value = entry.intent;
+      showInputsForIntent(entry.intent);
+      ui.draftWords.value = entry.intent === "draft" ? (entry.value ?? "") : "";
+      ui.reviseWords.value = entry.intent === "revise" ? (entry.value ?? "") : "";
+      ui.planMinutes.value = entry.intent === "plan" ? (entry.value ?? "") : "";
+      ui.researchDone.checked = entry.intent === "research" ? (entry.value === true) : false;
+    } else {
+      showInputsForIntent(ui.intent.value);
+    }
+  }
+
+  function formatEntryValue(entry) {
+    if (!entry) return "—";
+    switch (entry.intent) {
+      case "draft": return `${Number(entry.value || 0)} words`;
+      case "revise": return `${Number(entry.value || 0)} net words`;
+      case "plan": return `${Number(entry.value || 0)} minutes`;
+      case "research": return entry.value === true ? "session ✅" : "session —";
+      default: return String(entry.value ?? "—");
+    }
+  }
+
+  function parseTodayEntryFromUI() {
+    const intent = ui.intent.value;
+    if (intent === "draft") {
+      const v = Number(ui.draftWords.value || 0);
+      return { intent, value: v, saved: true };
+    }
+    if (intent === "revise") {
+      const v = Number(ui.reviseWords.value || 0);
+      return { intent, value: v, saved: true };
+    }
+    if (intent === "plan") {
+      const v = Number(ui.planMinutes.value || 0);
+      return { intent, value: v, saved: true };
+    }
+    if (intent === "research") {
+      const v = ui.researchDone.checked === true;
+      return { intent, value: v, saved: true };
+    }
+    return null;
+  }
+
+  // ---- init ----
+  let state = loadState();
+
+  // set UI defaults
+  ui.dailyGoal.value = state.dailyGoal;
+  showInputsForIntent(ui.intent.value);
+
+  ui.intent.addEventListener("change", () => {
+    showInputsForIntent(ui.intent.value);
+  });
+
+  ui.dailyGoal.addEventListener("change", () => {
+    const goal = Number(ui.dailyGoal.value || 0);
+    state.dailyGoal = isNaN(goal) ? 0 : goal;
+    saveState(state);
+    showInputsForIntent(ui.intent.value);
+    render(state);
+  });
+
+  ui.saveBtn.addEventListener("click", () => {
+    const entry = parseTodayEntryFromUI();
+    const key = todayKey();
+    state.entries[key] = entry;
+    saveState(state);
+    render(state);
+  });
+
+  ui.undoTodayBtn.addEventListener("click", () => {
+    const key = todayKey();
+    delete state.entries[key];
+    saveState(state);
+    // clear inputs
+    ui.draftWords.value = "";
+    ui.reviseWords.value = "";
+    ui.planMinutes.value = "";
+    ui.researchDone.checked = false;
+    render(state);
+  });
+
+  ui.resetAllBtn.addEventListener("click", () => {
+    const ok = confirm("Reset all data? This cannot be undone.");
+    if (!ok) return;
+    state = defaultState();
+    saveState(state);
+    render(state);
+  });
+
+  render(state);
+})();
+</script>
+</body>
+</html>

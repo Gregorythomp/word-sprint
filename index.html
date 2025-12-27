@@ -26,9 +26,20 @@
     button:hover { filter: brightness(1.08); }
     .muted { color: #b8c6ea; font-size: 13px; }
     .big { font-size: 34px; font-weight: 700; margin: 0; }
-    .pill { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid #2a3e6e; background: rgba(14,21,36,.6); }
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #2a3e6e;
+      background: rgba(14,21,36,.6);
+      color: #e8eefc;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .pill:hover { filter: brightness(1.08); }
     .ok { color: #a8ffcb; }
-    .no { color: #ffb3b3; }
     .bar { height: 12px; background: #0e1524; border: 1px solid #2a3e6e; border-radius: 999px; overflow: hidden; }
     .fill { height: 100%; width: 0%; background: #7aa7ff; }
     table { width: 100%; border-collapse: collapse; }
@@ -37,9 +48,7 @@
     .right { text-align: right; }
     .tiny { font-size: 12px; color: #b8c6ea; }
     .danger { border-color: #aa3b3b; }
-    .footer { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .note { margin-top: 10px; line-height: 1.35; }
-    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; padding: 2px 6px; border: 1px solid #2a3e6e; border-radius: 8px; background: #0e1524; }
+    .footer { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .divider { height: 1px; background: #203053; margin: 14px 0; }
   </style>
 </head>
@@ -48,10 +57,9 @@
     <div class="card" style="margin-bottom:16px;">
       <h1>Word Sprint</h1>
       <p class="sub">
-         A gentle writing tracker that protects your streak by honoring different kinds of writing 	 work.
-  	<br />
-  <span class="tiny"><b>How it works:</b> Pick today’s intent → log your work → save → keep your streak alive.</span>
-  <span class="tiny">(Data stays on this device.)</span>
+        A gentle writing tracker that protects your streak by honoring different kinds of writing work.<br />
+        <span class="tiny"><b>How it works:</b> Pick today’s intent → log your work → save → keep your streak alive.</span>
+        <span class="tiny">(Data stays on this device.)</span>
       </p>
 
       <div class="row">
@@ -89,10 +97,12 @@
 
         <div id="inputResearch" style="display:none;">
           <label>&nbsp;</label><br />
-          <label class="pill"><input id="researchDone" type="checkbox" /> Session completed</label>
+          <label class="pill" style="cursor:pointer;">
+            <input id="researchDone" type="checkbox" /> Session completed
+          </label>
         </div>
 
-        <!-- NOTE FIELD (always visible) -->
+        <!-- NOTE FIELD -->
         <div style="flex:1; min-width:260px;">
           <label for="note">What did you work on? <span class="tiny">(optional)</span></label><br />
           <input id="note" type="text" placeholder="e.g., revised Chapter 3 dialogue" />
@@ -104,7 +114,7 @@
         </div>
       </div>
 
-      <div class="note tiny" id="criteriaNote"></div>
+      <div class="tiny" id="criteriaNote"></div>
 
       <div class="divider"></div>
 
@@ -136,7 +146,17 @@
       <div class="footer">
         <button id="undoTodayBtn" class="danger">Clear today</button>
         <button id="resetAllBtn" class="danger">Reset all data</button>
-        <span class="tiny">Tip: keep it tiny. This app is meant to reduce guilt, not add it.</span>
+
+        <a class="pill" href="https://ko-fi.com/gregorymthompson" target="_blank" rel="noopener noreferrer">
+          ❤️ Support Word Sprint
+        </a>
+
+        <!-- Change the email address below to your preferred feedback email -->
+        <a class="pill" href="mailto:gregorymarkthompson@live.com?subject=Word%20Sprint%20Feedback">
+          💬 Send feedback
+        </a>
+
+        <span class="tiny">Momentum beats guilt.</span>
       </div>
     </div>
 
@@ -180,7 +200,6 @@
 <script>
 (() => {
   const STORAGE_KEY = "wordsprint_v1";
-
   const $ = (id) => document.getElementById(id);
 
   const ui = {
@@ -216,7 +235,7 @@
     research7: $("research7")
   };
 
-  const todayKey = () => new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  const todayKey = () => new Date().toISOString().slice(0,10);
 
   const intentLabel = (intent) => ({
     draft: "✍️ Draft",
@@ -227,7 +246,6 @@
 
   const defaultState = () => ({
     dailyGoal: 1000,
-    // entries keyed by YYYY-MM-DD
     entries: {},
     bestStreak: 0
   });
@@ -257,7 +275,7 @@
       case "draft":
         return Number(entry.value || 0) >= Number(dailyGoal || 0);
       case "revise":
-        return entry.saved === true;
+        return entry.saved === true; // showing up counts
       case "plan":
         return Number(entry.value || 0) > 0;
       case "research":
@@ -301,11 +319,43 @@
     const goal = Number(ui.dailyGoal.value || 0);
     const notes = {
       draft: `Today is a Draft day. A win = words ≥ ${goal}.`,
-  revise: "Today is a Revise day. A win = you showed up (saving counts, even if you cut words).",
-  plan: "Today is a Plan day. A win = minutes > 0.",
-  research: "Today is a Research day. A win = session completed."
+      revise: "Today is a Revise day. A win = you showed up (saving counts, even if you cut words).",
+      plan: "Today is a Plan day. A win = minutes > 0.",
+      research: "Today is a Research day. A win = session completed."
     };
     ui.criteriaNote.textContent = notes[intent] || "";
+  }
+
+  function formatEntryValue(entry) {
+    if (!entry) return "—";
+    switch (entry.intent) {
+      case "draft": return `${Number(entry.value || 0)} words`;
+      case "revise": return `${Number(entry.value || 0)} net words`;
+      case "plan": return `${Number(entry.value || 0)} minutes`;
+      case "research": return entry.value === true ? "session ✅" : "session —";
+      default: return String(entry.value ?? "—");
+    }
+  }
+
+  function parseTodayEntryFromUI() {
+    const intent = ui.intent.value;
+    if (intent === "draft") {
+      const v = Number(ui.draftWords.value || 0);
+      return { intent, value: v, saved: true, note: ui.note.value || "" };
+    }
+    if (intent === "revise") {
+      const v = Number(ui.reviseWords.value || 0);
+      return { intent, value: v, saved: true, note: ui.note.value || "" };
+    }
+    if (intent === "plan") {
+      const v = Number(ui.planMinutes.value || 0);
+      return { intent, value: v, saved: true, note: ui.note.value || "" };
+    }
+    if (intent === "research") {
+      const v = ui.researchDone.checked === true;
+      return { intent, value: v, saved: true, note: ui.note.value || "" };
+    }
+    return null;
   }
 
   function render(state) {
@@ -322,6 +372,7 @@
       ? `${intentLabel(entry.intent)} — ${formatEntryValue(entry)}${entry.note ? " — " + entry.note : ""}`
       : "Choose an intent and save your work for today.";
 
+    // Draft progress only on draft days
     let pct = 0;
     if (entry && entry.intent === "draft") {
       const words = Number(entry.value || 0);
@@ -395,38 +446,6 @@
       showInputsForIntent(ui.intent.value);
       ui.note.value = "";
     }
-  }
-
-  function formatEntryValue(entry) {
-    if (!entry) return "—";
-    switch (entry.intent) {
-      case "draft": return `${Number(entry.value || 0)} words`;
-      case "revise": return `${Number(entry.value || 0)} net words`;
-      case "plan": return `${Number(entry.value || 0)} minutes`;
-      case "research": return entry.value === true ? "session ✅" : "session —";
-      default: return String(entry.value ?? "—");
-    }
-  }
-
-  function parseTodayEntryFromUI() {
-    const intent = ui.intent.value;
-    if (intent === "draft") {
-      const v = Number(ui.draftWords.value || 0);
-      return { intent, value: v, saved: true, note: ui.note.value || "" };
-    }
-    if (intent === "revise") {
-      const v = Number(ui.reviseWords.value || 0);
-      return { intent, value: v, saved: true, note: ui.note.value || "" };
-    }
-    if (intent === "plan") {
-      const v = Number(ui.planMinutes.value || 0);
-      return { intent, value: v, saved: true, note: ui.note.value || "" };
-    }
-    if (intent === "research") {
-      const v = ui.researchDone.checked === true;
-      return { intent, value: v, saved: true, note: ui.note.value || "" };
-    }
-    return null;
   }
 
   // ---- init ----

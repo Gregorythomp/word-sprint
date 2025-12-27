@@ -48,8 +48,10 @@
     <div class="card" style="margin-bottom:16px;">
       <h1>Word Sprint</h1>
       <p class="sub">
-        A gentle writing tracker that protects your streak by honoring different kinds of writing work.
-        <span class="tiny">(Data stays on this device.)</span>
+         A gentle writing tracker that protects your streak by honoring different kinds of writing 	 work.
+  	<br />
+  <span class="tiny"><b>How it works:</b> Pick today’s intent → log your work → save → keep your streak alive.</span>
+  <span class="tiny">(Data stays on this device.)</span>
       </p>
 
       <div class="row">
@@ -298,10 +300,10 @@
 
     const goal = Number(ui.dailyGoal.value || 0);
     const notes = {
-      draft: `Draft day win = words ≥ ${goal}.`,
-      revise: "Revise day win = you showed up (saving counts, even if you cut words).",
-      plan: "Plan day win = minutes > 0.",
-      research: "Research day win = session completed."
+      draft: `Today is a Draft day. A win = words ≥ ${goal}.`,
+  revise: "Today is a Revise day. A win = you showed up (saving counts, even if you cut words).",
+  plan: "Today is a Plan day. A win = minutes > 0.",
+  research: "Today is a Research day. A win = session completed."
     };
     ui.criteriaNote.textContent = notes[intent] || "";
   }
